@@ -5,33 +5,45 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
+    "userInterfaceStyle": "light",
     "splash": {
-      "backgroundColor": "#0f172a"
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0077B6"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
-    "sdkVersion": "52.0.0",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tennisflow.app"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0f172a"
-      }
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0077B6"
+      },
+      "package": "com.tennisflow.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "your-project-id"
-      }
-    },
     "plugins": [
-      "expo-router"
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow TennisFlow to access your photos to upload tennis videos.",
+          "cameraPermission": "Allow TennisFlow to access your camera to record tennis videos."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow TennisFlow to access your media library.",
+          "savePhotosPermission": "Allow TennisFlow to save videos to your media library.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
     ]
   }
 }
