@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: 'expo-app/package-lock.json'
+    
+    - name: Install dependencies
+      run: |
+        cd expo-app
+        npm ci
+    
+    - name: Run TypeScript check
+      run: |
+        cd expo-app
+        npx tsc --noEmit
+        
+    - name: Run ESLint
+      run: |
+        cd expo-app
+        npm run lint
+      continue-on-error: true
+      
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        cache: 'npm'
+        cache-dependency-path: 'expo-app/package-lock.json'
+    
+    - name: Install dependencies
+      run: |
+        cd expo-app
+        npm ci
+    
+    # Placeholder for future test commands
+    - name: Run tests
+      run: |
+        cd expo-app
+        echo "Tests will be implemented soon"
