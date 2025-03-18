@@ -1,75 +1,96 @@
-# TennisFlow API Service
+# TennisFlow API & Processing Service
 
-This directory contains the backend ML processing API for TennisFlow. The API handles video analysis, processing, and ML model integration.
+This directory contains the API and processing service for the TennisFlow application. It handles video analysis for tennis swings using computer vision techniques.
 
 ## Architecture
 
-The TennisFlow API service follows a serverless architecture with three main components:
+The service is divided into several components:
 
-1. **API Gateway**: Handles HTTP requests and authentication
-2. **Processing Queue**: Manages the video analysis job queue
-3. **ML Processing Service**: Runs the ML models on the videos
+1. **FastAPI Server** - Handles API requests, manages uploads, and provides analysis results.
+2. **Processing Worker** - Analyzes videos using OpenPose/MediaPipe for pose estimation.
+3. **Redis Queue** - Coordinates tasks between the API and worker.
+4. **Supabase Integration** - Stores videos and analysis results.
 
-## Flow
+## Technologies Used
 
-1. Mobile app uploads a video to Supabase Storage
-2. App calls the API to request analysis of the video
-3. API adds the video to the processing queue
-4. ML service takes videos from the queue, processes them, and updates the database with results
-5. App polls for status updates or receives push notifications when processing is complete
+- FastAPI for the API layer
+- OpenPose for precise pose estimation
+- MediaPipe as a fallback pose detector
+- Redis for task queue management
+- Docker for containerization
+- Supabase for storage and database
 
-## ML Components
+## Getting Started
 
-The ML pipeline consists of several components:
+### Prerequisites
 
-- **Pose Estimation**: Detects and tracks body key points using models like PoseNet or BlazePose
-- **Stroke Classification**: Identifies the type of tennis stroke (forehand, backhand, serve, etc.)
-- **Technique Analysis**: Analyzes swing mechanics and body positioning
-- **Performance Metrics**: Calculates metrics like racket speed, hip rotation, etc.
-- **Feedback Generation**: Uses rule-based and ML systems to generate actionable feedback
+- Docker and Docker Compose
+- Supabase account with a project set up
 
-## Deployment
+### Setup
 
-The API components are deployed using:
-
-- AWS Lambda for serverless functions
-- AWS SQS for queue management
-- AWS S3 for temporary storage
-- TensorFlow Serving for ML model hosting
-
-## Local Development
-
-For local development, you can use the mock API service included in this directory:
+1. Clone the repository
+2. Copy `.env.example` to `.env` and fill in your Supabase credentials
+3. Build and start the Docker services:
 
 ```bash
-# Install dependencies
-npm install
-
-# Start local development server
-npm run dev
+cd api
+docker-compose up --build
 ```
+
+### Environment Variables
+
+See `.env.example` for all required environment variables.
 
 ## API Endpoints
 
-The API exposes the following endpoints:
+- `POST /upload` - Upload a video for analysis
+- `POST /analyze` - Analyze an already uploaded video
+- `GET /status/{task_id}` - Check analysis status
+- `GET /video/{video_id}/analysis` - Get analysis results
+- `GET /health` - Check API health
 
-- `POST /videos/analyze` - Request analysis of a video
-- `GET /videos/{id}/status` - Check the status of video processing
-- `GET /videos/{id}/results` - Get the analysis results for a video
-- `POST /videos/{id}/feedback` - Add feedback to a video
-- `GET /users/{id}/progress` - Get user progress metrics
+## Development
 
-## ML Model Development
+To run the services locally outside of Docker:
 
-The models are trained using TensorFlow and PyTorch. The training data consists of annotated tennis videos from professional players and amateur players.
+1. Install dependencies:
+```bash
+pip install -r requirements.txt
+```
 
-Model variants:
-- High-accuracy model (used for cloud processing)
-- Lightweight model (can run on-device for basic analysis)
+2. Start the API:
+```bash
+cd src
+./start.sh api
+```
 
-## Future Improvements
+3. Start the worker:
+```bash
+cd src
+./start.sh worker
+```
 
-- Real-time analysis for immediate feedback
-- On-device ML for faster processing
-- Coach-to-player feedback system
-- Comparative analysis between players
+## OpenPose Integration
+
+The service uses OpenPose for precise pose estimation when available. If OpenPose is not installed, it falls back to MediaPipe for basic pose detection.
+
+To use OpenPose:
+1. Set the `OPENPOSE_BIN_PATH` and `OPENPOSE_MODELS_PATH` in your `.env` file
+2. The Docker setup will install OpenPose automatically
+
+## Processing Pipeline
+
+1. Video is uploaded to Supabase storage
+2. API creates a task in Redis queue
+3. Worker picks up the task and processes the video:
+   - Extracts frames
+   - Detects poses with OpenPose/MediaPipe
+   - Analyzes swing mechanics
+   - Generates metrics and annotations
+4. Results are stored in Supabase
+5. Mobile app can fetch and display results
+
+## License
+
+This project is part of the TennisFlow application.
