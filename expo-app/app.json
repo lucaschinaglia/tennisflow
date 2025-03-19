@@ -43,7 +43,9 @@
           "savePhotosPermission": "Allow TennisFlow to save videos to your media library.",
           "isAccessMediaLocationEnabled": true
         }
-      ]
-    ]
+      ],
+      "expo-router"
+    ],
+    "sdkVersion": "52.0.0"
   }
 }

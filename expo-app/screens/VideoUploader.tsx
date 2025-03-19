@@ -11,8 +11,8 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Camera } from 'expo-camera';
-import { Video } from 'expo-av';
+import { CameraView, CameraType as ExpoCameraType, useCameraPermissions, VideoQuality } from 'expo-camera';
+import { Video, ResizeMode } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -24,34 +24,34 @@ type VideoUploaderScreenNavigationProp = NativeStackNavigationProp<RootStackPara
 
 const VideoUploader: React.FC = () => {
   const navigation = useNavigation<VideoUploaderScreenNavigationProp>();
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [permission, requestPermission] = useCameraPermissions();
   const [cameraType, setCameraType] = useState<CameraType>(CameraType.back);
   const [isRecording, setIsRecording] = useState(false);
   const [video, setVideo] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const cameraRef = useRef<Camera | null>(null);
+  const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      const { status: micStatus } = await Camera.requestMicrophonePermissionsAsync();
-      setHasPermission(status === 'granted' && micStatus === 'granted');
+      if (!permission?.granted) {
+        await requestPermission();
+      }
     })();
-  }, []);
+  }, [permission, requestPermission]);
 
   const startRecording = async () => {
     if (cameraRef.current) {
       setIsRecording(true);
       try {
         const videoRecordPromise = cameraRef.current.recordAsync({
-          maxDuration: 15,
-          quality: Camera.Constants.VideoQuality['720p'],
-          mute: false,
+          maxDuration: 15
         });
         
         const data = await videoRecordPromise;
-        setVideo(data.uri);
+        if (data) {
+          setVideo(data.uri);
+        }
       } catch (error) {
         console.error('Error recording video:', error);
         Alert.alert('Error', 'Failed to record video');
@@ -116,15 +116,7 @@ const VideoUploader: React.FC = () => {
     );
   };
 
-  if (hasPermission === null) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2196F3" />
-      </View>
-    );
-  }
-
-  if (hasPermission === false) {
+  if (!permission?.granted) {
     return (
       <View style={styles.container}>
         <Text style={styles.text}>No access to camera</Text>
@@ -155,13 +147,20 @@ const VideoUploader: React.FC = () => {
         <View style={{ width: 40 }} />
       </View>
 
-      {!video ? (
+      {!permission?.granted ? (
+        <View style={styles.permissionContainer}>
+          <Text style={styles.permissionText}>We need camera permission to record your swing</Text>
+          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          </TouchableOpacity>
+        </View>
+      ) : !video ? (
         // Camera View
         <View style={styles.cameraContainer}>
-          <Camera
+          <CameraView
             ref={cameraRef}
             style={styles.camera}
-            type={cameraType === CameraType.back ? 1 : 2}
+            facing={cameraType === CameraType.back ? 'back' : 'front'}
             ratio="16:9"
           >
             <View style={styles.cameraControls}>
@@ -172,7 +171,7 @@ const VideoUploader: React.FC = () => {
                 <Ionicons name="camera-reverse" size={30} color="#FFF" />
               </TouchableOpacity>
             </View>
-          </Camera>
+          </CameraView>
           
           <View style={styles.controls}>
             <TouchableOpacity
@@ -210,7 +209,7 @@ const VideoUploader: React.FC = () => {
             source={{ uri: video }}
             style={styles.videoPreview}
             useNativeControls
-            resizeMode="contain"
+            resizeMode={ResizeMode.CONTAIN}
             isLooping
           />
           
@@ -410,6 +409,27 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+  permissionContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionText: {
+    color: '#FFF',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  permissionButton: {
+    backgroundColor: '#2196F3',
+    padding: 12,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
     color: 'white',
     fontSize: 16,
     textAlign: 'center',

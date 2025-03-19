@@ -25,213 +25,113 @@ type AuthMode = 'login' | 'signup' | 'reset';
 
 const AuthScreen: React.FC = () => {
   const navigation = useNavigation<AuthScreenNavigationProp>();
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [authMode, setAuthMode] = useState<AuthMode>('login');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleAuth = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
-      return;
-    }
-
-    if (authMode !== 'reset' && !password.trim()) {
-      Alert.alert('Error', 'Please enter your password');
-      return;
-    }
-
-    if (authMode === 'signup' && password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
+    setLoading(true);
+    
     try {
-      setLoading(true);
-
-      if (authMode === 'login') {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
+      // This is just a placeholder - in a real app, you would connect to Supabase or another auth provider
+      if (isLogin) {
+        // Login logic
+        console.log('Logging in with:', email, password);
+        // For demo purposes, we'll just navigate to the Home screen
         navigation.navigate('Home');
-      } else if (authMode === 'signup') {
-        const { error } = await signUp(email, password);
-        if (error) throw error;
-        Alert.alert(
-          'Verification Email Sent',
-          'Please check your email to verify your account.'
-        );
-        setAuthMode('login');
-      } else if (authMode === 'reset') {
-        const { error } = await resetPassword(email);
-        if (error) throw error;
-        Alert.alert(
-          'Reset Email Sent',
-          'Please check your email for password reset instructions.'
-        );
-        setAuthMode('login');
+      } else {
+        // Signup logic
+        if (password !== confirmPassword) {
+          Alert.alert('Error', 'Passwords do not match');
+          return;
+        }
+        console.log('Signing up with:', email, password);
+        // For demo purposes, we'll just navigate to the Home screen
+        navigation.navigate('Home');
       }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'An error occurred');
+    } catch (error) {
+      console.error('Authentication error:', error);
+      Alert.alert('Error', 'Failed to authenticate. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getTitle = () => {
-    switch (authMode) {
-      case 'login':
-        return 'Welcome Back';
-      case 'signup':
-        return 'Create Account';
-      case 'reset':
-        return 'Reset Password';
-      default:
-        return 'Tennis Flow';
-    }
-  };
-
-  const getSubtitle = () => {
-    switch (authMode) {
-      case 'login':
-        return 'Sign in to continue';
-      case 'signup':
-        return 'Create a new account';
-      case 'reset':
-        return "We'll send you a reset link";
-      default:
-        return '';
-    }
-  };
-
-  const getButtonText = () => {
-    switch (authMode) {
-      case 'login':
-        return 'Sign In';
-      case 'signup':
-        return 'Sign Up';
-      case 'reset':
-        return 'Send Reset Link';
-      default:
-        return 'Continue';
-    }
-  };
-
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={styles.logoContainer}>
-          <Image
-            source={{ uri: 'https://via.placeholder.com/150?text=TF' }}
-            style={styles.logo}
-          />
-          <Text style={styles.appName}>TennisFlow</Text>
-        </View>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <View style={styles.logoContainer}>
+            <Image
+              source={{ uri: 'https://via.placeholder.com/150x150?text=TennisFlow' }}
+              style={styles.logo}
+            />
+            <Text style={styles.appName}>TennisFlow</Text>
+            <Text style={styles.tagline}>Analyze and improve your tennis swing</Text>
+          </View>
 
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>{getTitle()}</Text>
-          <Text style={styles.subtitle}>{getSubtitle()}</Text>
+          <View style={styles.formContainer}>
+            <Text style={styles.heading}>{isLogin ? 'Sign In' : 'Create Account'}</Text>
 
-          <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
               placeholder="Email"
               value={email}
               onChangeText={setEmail}
-              autoCapitalize="none"
               keyboardType="email-address"
-              autoComplete="email"
-              returnKeyType="next"
+              autoCapitalize="none"
             />
-          </View>
 
-          {authMode !== 'reset' && (
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, { flex: 1 }]}
-                placeholder="Password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                returnKeyType={authMode === 'signup' ? 'next' : 'done'}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color="#666"
-                />
-              </TouchableOpacity>
-            </View>
-          )}
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
 
-          {authMode === 'signup' && (
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
+            {!isLogin && (
               <TextInput
-                style={[styles.input, { flex: 1 }]}
+                style={styles.input}
                 placeholder="Confirm Password"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showPassword}
-                returnKeyType="done"
               />
-            </View>
-          )}
+            )}
 
-          {authMode === 'login' && (
             <TouchableOpacity
-              style={styles.forgotPassword}
-              onPress={() => setAuthMode('reset')}
+              style={styles.authButton}
+              onPress={handleAuth}
+              disabled={loading}
             >
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <Text style={styles.authButtonText}>
+                {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Sign Up'}
+              </Text>
             </TouchableOpacity>
-          )}
 
-          <TouchableOpacity
-            style={styles.authButton}
-            onPress={handleAuth}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator size="small" color="#FFF" />
-            ) : (
-              <Text style={styles.authButtonText}>{getButtonText()}</Text>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.switchModeContainer}>
-            {authMode === 'login' ? (
-              <Text style={styles.switchModeText}>
-                Don't have an account?{' '}
-                <Text
-                  style={styles.switchModeLink}
-                  onPress={() => setAuthMode('signup')}
-                >
-                  Sign Up
-                </Text>
+            <TouchableOpacity
+              style={styles.switchButton}
+              onPress={() => {
+                setIsLogin(!isLogin);
+                setEmail('');
+                setPassword('');
+                setConfirmPassword('');
+              }}
+            >
+              <Text style={styles.switchButtonText}>
+                {isLogin
+                  ? "Don't have an account? Sign Up"
+                  : 'Already have an account? Sign In'}
               </Text>
-            ) : (
-              <Text style={styles.switchModeText}>
-                Already have an account?{' '}
-                <Text
-                  style={styles.switchModeLink}
-                  onPress={() => setAuthMode('login')}
-                >
-                  Sign In
-                </Text>
-              </Text>
-            )}
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -240,107 +140,78 @@ const AuthScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f7',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     padding: 20,
   },
   logoContainer: {
     alignItems: 'center',
+    marginTop: 60,
     marginBottom: 40,
   },
   logo: {
-    width: 100,
-    height: 100,
-    borderRadius: 20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 16,
   },
   appName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 10,
-    color: '#333',
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 350,
-  },
-  title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
     color: '#333',
-    textAlign: 'center',
   },
-  subtitle: {
+  tagline: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 30,
+    marginTop: 8,
     textAlign: 'center',
   },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 10,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    height: 56,
+  formContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontSize: 16,
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#333',
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
     marginBottom: 24,
   },
-  forgotPasswordText: {
-    color: '#2196F3',
-    fontSize: 14,
+  input: {
+    backgroundColor: '#f5f5f7',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    fontSize: 16,
   },
   authButton: {
     backgroundColor: '#2196F3',
-    borderRadius: 10,
-    height: 56,
-    justifyContent: 'center',
+    borderRadius: 8,
+    padding: 16,
     alignItems: 'center',
-    shadowColor: '#2196F3',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    marginTop: 8,
   },
   authButtonText: {
-    color: '#FFF',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  switchModeContainer: {
+  switchButton: {
     marginTop: 24,
     alignItems: 'center',
   },
-  switchModeText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  switchModeLink: {
+  switchButtonText: {
     color: '#2196F3',
-    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 
