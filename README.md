@@ -1,3 +1,4 @@
+# TennisFlow - mobile app for tennis swing analysis
 # TennisFlow
 
 TennisFlow is a comprehensive tennis swing analysis app that uses computer vision and AI to help players improve their technique. The app allows users to record and upload videos of their tennis swings, which are then analyzed to provide detailed feedback and insights.
