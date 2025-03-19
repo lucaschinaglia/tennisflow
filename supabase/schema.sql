@@ -1,130 +1,173 @@
--- Create schema for TennisFlow application
-
--- Users table extension
--- Builds on the auth.users table provided by Supabase Auth
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  email TEXT NOT NULL,
+-- Create profiles table
+CREATE TABLE IF NOT EXISTS profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  email TEXT UNIQUE,
   first_name TEXT,
   last_name TEXT,
-  avatar_url TEXT
-);
-
--- Videos table for storing user-uploaded tennis videos
-CREATE TABLE IF NOT EXISTS videos (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  avatar_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  video_url TEXT NOT NULL,
-  thumbnail_url TEXT,
-  analysis_status TEXT CHECK (analysis_status IN ('pending', 'processing', 'completed', 'failed')) DEFAULT 'pending',
-  analysis_results JSONB
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Analysis details table for storing specific swing analysis data
-CREATE TABLE IF NOT EXISTS analysis_details (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
-  frame_number INTEGER,
-  timestamp FLOAT,
-  pose_data JSONB,
-  swing_phase TEXT,
-  metrics JSONB,
-  annotations JSONB
-);
+-- Enable Row Level Security
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 
--- User feedback table for storing system feedback and user comments
-CREATE TABLE IF NOT EXISTS feedback (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  video_id UUID NOT NULL REFERENCES videos(id) ON DELETE CASCADE,
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  feedback_type TEXT CHECK (feedback_type IN ('system', 'coach', 'user')),
-  content TEXT NOT NULL,
-  timestamp FLOAT,
-  is_public BOOLEAN DEFAULT FALSE
-);
+-- Create policy for profiles
+CREATE POLICY "Users can view their own profile" 
+  ON profiles 
+  FOR SELECT 
+  USING (auth.uid() = id);
 
--- Progress tracking table for monitoring user improvement
-CREATE TABLE IF NOT EXISTS progress (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  metric_name TEXT NOT NULL,
-  metric_value FLOAT NOT NULL,
-  video_id UUID REFERENCES videos(id) ON DELETE SET NULL
-);
+CREATE POLICY "Users can update their own profile" 
+  ON profiles 
+  FOR UPDATE 
+  USING (auth.uid() = id);
 
--- Configure Row-Level Security (RLS)
--- Users can only access their own data
-
--- Users table RLS
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY users_policy ON users
-  USING (id = auth.uid());
-
--- Videos table RLS
-ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY videos_select_policy ON videos
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY videos_insert_policy ON videos
-  FOR INSERT WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY videos_update_policy ON videos
-  FOR UPDATE USING (user_id = auth.uid());
-
-CREATE POLICY videos_delete_policy ON videos
-  FOR DELETE USING (user_id = auth.uid());
-
--- Analysis details table RLS
-ALTER TABLE analysis_details ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY analysis_details_policy ON analysis_details
-  USING (video_id IN (SELECT id FROM videos WHERE user_id = auth.uid()));
-
--- Feedback table RLS
-ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY feedback_select_policy ON feedback
-  FOR SELECT USING (
-    user_id = auth.uid() OR 
-    video_id IN (SELECT id FROM videos WHERE user_id = auth.uid()) OR
-    is_public = TRUE
-  );
-
-CREATE POLICY feedback_insert_policy ON feedback
-  FOR INSERT WITH CHECK (user_id = auth.uid());
-
-CREATE POLICY feedback_update_policy ON feedback
-  FOR UPDATE USING (user_id = auth.uid());
-
-CREATE POLICY feedback_delete_policy ON feedback
-  FOR DELETE USING (user_id = auth.uid());
-
--- Progress table RLS
-ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY progress_policy ON progress
-  USING (user_id = auth.uid());
-
--- Create function to handle new user signup
+-- Create trigger to create profile on user signup
 CREATE OR REPLACE FUNCTION public.handle_new_user() 
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.users (id, email, avatar_url)
-  VALUES (NEW.id, NEW.email, NEW.raw_user_meta_data->>'avatar_url');
-  RETURN NEW;
+  INSERT INTO public.profiles (id, email)
+  VALUES (new.id, new.email);
+  RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Trigger the function every time a user signs up
 CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- Create videos table
+CREATE TABLE IF NOT EXISTS videos (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  title TEXT,
+  description TEXT,
+  storage_path TEXT NOT NULL,
+  thumbnail_path TEXT,
+  duration FLOAT,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+
+-- Create policy for videos
+CREATE POLICY "Users can view their own videos" 
+  ON videos 
+  FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own videos" 
+  ON videos 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own videos" 
+  ON videos 
+  FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own videos" 
+  ON videos 
+  FOR DELETE 
+  USING (auth.uid() = user_id);
+
+-- Create analysis table
+CREATE TABLE IF NOT EXISTS analyses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  video_id UUID REFERENCES videos ON DELETE CASCADE NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  status TEXT DEFAULT 'pending',
+  data JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE analyses ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for analyses
+CREATE POLICY "Users can view their own analyses" 
+  ON analyses 
+  FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own analyses" 
+  ON analyses 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own analyses" 
+  ON analyses 
+  FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own analyses" 
+  ON analyses 
+  FOR DELETE 
+  USING (auth.uid() = user_id);
+
+-- Create tasks table to track processing tasks
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id TEXT UNIQUE NOT NULL,
+  video_id UUID REFERENCES videos ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  status TEXT DEFAULT 'queued',
+  progress FLOAT DEFAULT 0,
+  error TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for tasks
+CREATE POLICY "Users can view their own tasks" 
+  ON tasks 
+  FOR SELECT 
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own tasks" 
+  ON tasks 
+  FOR INSERT 
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own tasks" 
+  ON tasks 
+  FOR UPDATE 
+  USING (auth.uid() = user_id);
+
+-- Create storage bucket for videos
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('tennis-videos', 'tennis-videos', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Create storage policy for videos bucket
+CREATE POLICY "Users can upload their own videos" 
+  ON storage.objects 
+  FOR INSERT 
+  TO authenticated 
+  WITH CHECK (bucket_id = 'tennis-videos' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can view their own videos" 
+  ON storage.objects 
+  FOR SELECT 
+  TO authenticated 
+  USING (bucket_id = 'tennis-videos' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can update their own videos" 
+  ON storage.objects 
+  FOR UPDATE 
+  TO authenticated 
+  USING (bucket_id = 'tennis-videos' AND auth.uid()::text = (storage.foldername(name))[1]);
+
+CREATE POLICY "Users can delete their own videos" 
+  ON storage.objects 
+  FOR DELETE 
+  TO authenticated 
+  USING (bucket_id = 'tennis-videos' AND auth.uid()::text = (storage.foldername(name))[1]);
