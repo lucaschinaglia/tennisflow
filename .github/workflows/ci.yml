@@ -9,53 +9,45 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
-        cache: 'npm'
-        cache-dependency-path: 'expo-app/package-lock.json'
-    
-    - name: Install dependencies
-      run: |
-        cd expo-app
-        npm ci
-    
-    - name: Run TypeScript check
-      run: |
-        cd expo-app
-        npx tsc --noEmit
-        
-    - name: Run ESLint
-      run: |
-        cd expo-app
-        npm run lint
-      continue-on-error: true
+      - uses: actions/checkout@v3
       
-  test:
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'npm'
+          cache-dependency-path: expo-app/package.json
+      
+      - name: Install dependencies
+        working-directory: ./expo-app
+        run: npm install
+      
+      - name: Run ESLint
+        working-directory: ./expo-app
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx || echo "ESLint warnings found but continuing"
+      
+      - name: Run TypeScript check
+        working-directory: ./expo-app
+        run: npx tsc --noEmit
+
+  api-check:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: 18
-        cache: 'npm'
-        cache-dependency-path: 'expo-app/package-lock.json'
-    
-    - name: Install dependencies
-      run: |
-        cd expo-app
-        npm ci
-    
-    # Placeholder for future test commands
-    - name: Run tests
-      run: |
-        cd expo-app
-        echo "Tests will be implemented soon"
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
+          cache-dependency-path: api/requirements.txt
+      
+      - name: Install Python dependencies
+        working-directory: ./api
+        run: pip install -r requirements.txt
+      
+      - name: Check Python syntax
+        working-directory: ./api
+        run: |
+          python -m py_compile $(find ./src -name "*.py")
