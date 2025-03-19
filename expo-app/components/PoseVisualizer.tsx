@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { View, StyleSheet, Text, Image, Dimensions } from 'react-native';
 import Svg, { Circle, Line, Text as SvgText } from 'react-native-svg';
 import { PoseData, Annotation } from '../services/analysisService';
@@ -23,16 +23,13 @@ const PoseVisualizer: React.FC<PoseVisualizerProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
 }) => {
-  // Ref for saving the view dimensions
-  const svgRef = useRef<View>(null);
-
   // Keypoint size based on canvas dimensions
   const KEYPOINT_RADIUS = width * 0.01;
   const CONNECTION_STROKE_WIDTH = width * 0.005;
   const TEXT_SIZE = width * 0.03;
 
   // Define colors for different body parts
-  const colorMap = {
+  const colorMap: Record<string, string> = {
     left_shoulder: '#FF5722',
     right_shoulder: '#FF5722',
     left_elbow: '#FF9800',
@@ -54,7 +51,7 @@ const PoseVisualizer: React.FC<PoseVisualizerProps> = ({
 
   // Get color for a keypoint
   const getKeypointColor = (name: string): string => {
-    return colorMap[name as keyof typeof colorMap] || '#FF0000';
+    return colorMap[name] || '#FF0000';
   };
 
   // Get coordinates for keypoint in the container's coordinate system
@@ -83,7 +80,6 @@ const PoseVisualizer: React.FC<PoseVisualizerProps> = ({
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         style={StyleSheet.absoluteFillObject}
-        ref={svgRef}
       >
         {/* Draw connections first (so they appear behind keypoints) */}
         {poseData.connections.map((connection, index) => {
