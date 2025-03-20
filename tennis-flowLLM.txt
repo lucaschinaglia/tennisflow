@@ -1,0 +1,246 @@
+# TennisFlow - Tennis Swing Analysis Application
+
+## Project Context
+
+TennisFlow is a mobile application designed to help tennis players analyze and improve their swings through computer vision and machine learning technology. The application allows users to record their tennis swings, upload them for analysis, and receive feedback on their technique, including pose estimations and performance metrics.
+
+## Architecture Overview
+
+The project is divided into two main components:
+
+1. **Mobile Application (Expo React Native)**
+   - Frontend UI for user interaction
+   - Video recording and uploading functionality
+   - Display of analysis results and feedback
+
+2. **Backend Processing Service (FastAPI + Docker)**
+   - Video processing with OpenPose/MediaPipe
+   - Task queue management (Redis optional)
+   - Data storage via Supabase
+
+## Technical Decisions
+
+### Frontend (Mobile App)
+- **Framework**: React Native with Expo
+- **Navigation**: React Navigation (native-stack, bottom-tabs)
+- **State Management**: React Context API and local state
+- **Storage**: AsyncStorage for local data, Supabase for cloud storage
+- **Video Handling**: Expo Camera, Expo AV, Expo Image Picker, Expo File System
+- **UI Components**: Custom components with React Native components as base
+- **Authentication**: Enhanced Supabase Auth with session persistence and retry mechanisms
+
+### Backend (Processing Service)
+- **API Framework**: FastAPI
+- **Task Queue**: Redis (optional) for job management with fallback mechanisms
+- **Video Processing**: OpenPose for pose estimation, MediaPipe as alternative, TensorFlow/MoveNet as lightweight fallback
+- **Containerization**: Docker for deployment and scaling
+- **Cloud Storage**: Supabase Storage with proper bucket configuration
+- **Database**: Supabase PostgreSQL
+- **Error Handling**: Comprehensive error catching and logging
+- **Pose Analysis**: Rule-based biomechanical analysis with joint angle calculations and movement tracking
+
+### Integration
+- **Authentication**: Enhanced Supabase Auth with session validation
+- **API Communication**: Axios for HTTP requests with proper error handling
+- **Data Format**: JSON for API responses, with standardized schemas for analysis results
+- **Network Configuration**: Support for direct IP addressing for device testing
+
+## Development Setup
+
+### Mobile App
+- TypeScript for type safety
+- ESLint and Prettier for code quality
+- Expo SDK for cross-platform development
+- React Navigation for screen navigation
+- Support for real device testing via local network IP
+
+### Backend Service
+- Docker Compose for local development
+- FastAPI for API endpoints
+- Redis for queue management (optional component)
+- Python for processing logic
+- Graceful degradation when services are unavailable
+
+## Quick Start Guide
+
+### Starting the API Service
+
+1. **Prerequisites**:
+   - Docker and Docker Compose installed
+   - Python 3.8+ (for local development without Docker)
+   - Node.js 14+ (for mobile app)
+   - Supabase project created with storage bucket named "tennis-videos"
+
+2. **Environment Setup**:
+   - Copy `.env.example` to `.env` in the API directory
+   - Set Supabase credentials:
+     ```
+     SUPABASE_URL=your_supabase_url
+     SUPABASE_KEY=your_supabase_anon_key
+     SUPABASE_SERVICE_KEY=your_supabase_service_key
+     ```
+   - Set network configuration:
+     ```
+     API_HOST=0.0.0.0
+     API_PORT=8001
+     ```
+
+3. **Starting API with Docker (Full Stack)**:
+   ```bash
+   # From the project root
+   cd api
+   docker-compose -f docker-compose.yml up
+   ```
+
+4. **Starting API with Docker (OpenPose)**:
+   ```bash
+   cd api
+   docker-compose -f docker-compose.openpose.yml up
+   ```
+
+5. **Starting API with Docker (MediaPipe)**:
+   ```bash
+   cd api
+   docker-compose -f docker-compose.mediapipe.yml up
+   ```
+
+6. **Starting API with Docker (TensorFlow/MoveNet)**:
+   ```bash
+   cd api
+   docker-compose -f docker-compose.tensorflow.yml up
+   ```
+
+7. **Starting API without Docker (Development)**:
+   ```bash
+   cd api/src
+   pip install -r requirements.txt
+   uvicorn main:app --host 0.0.0.0 --port 8001 --reload
+   python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload 
+   ```
+
+8. **Starting API without Redis**:
+   - Set in .env: `USE_REDIS=false`
+   - API will process videos directly without a task queue
+
+9. **API Health Check**:
+   - API will be available at http://localhost:8001
+   - Swagger UI: http://localhost:8001/docs
+   - Health endpoint: http://localhost:8001/health
+
+### Starting the Mobile App
+
+1. **Setup**:
+   ```bash
+   cd app
+   npm install
+   cd expo-app
+   npm start
+   ```
+
+2. **Configure API Endpoint**:
+   - Edit `app/constants/Config.ts` and set:
+   ```typescript
+   export const API_URL = 'http://[your-local-ip]:8001';
+   ```
+
+3. **Run Development Server**:
+   ```bash
+   npm start
+   # or
+   npx expo start
+   ```
+
+4. **Run on Physical Device**:
+   - Install Expo Go app on your device
+   - Scan QR code from terminal
+   - Ensure phone is on same network as development machine
+
+## Common Troubleshooting
+
+- **API Connection Issues**: 
+  - Ensure API is running and accessible from your device
+  - Verify your local IP address is correct in config
+  - Check firewall settings to allow connections on port 8001
+
+- **Video Upload Problems**:
+  - Verify Supabase credentials and RLS policies
+  - Check storage bucket "tennis-videos" exists
+  - Ensure proper Content-Type headers for uploads
+
+- **Processing Failures**:
+  - Check Docker logs for OpenPose/MediaPipe errors
+  - Verify video format is supported (MP4 recommended)
+  - Ensure sufficient disk space for temporary video processing
+
+## Deployment Strategy
+
+- Mobile App: Expo EAS Build for iOS/Android app builds
+- Backend: Docker containers deployed to a cloud service (AWS, GCP, etc.)
+- Database & Storage: Supabase hosted services
+
+## ML Processing Flow
+
+1. User records or uploads video from mobile app
+2. Client authenticates with Supabase (with session retry mechanisms)
+3. Video is uploaded to Supabase storage with proper user-specific paths
+4. Analysis task is queued in Redis (if available) or tracked directly
+5. Worker processes video using OpenPose/MediaPipe/TensorFlow based on availability and requirements
+6. Analysis results (stroke classification, joint angles, movement metrics) are stored in Supabase
+7. Mobile app fetches and displays results to user
+
+## Tennis Analysis Methodology
+
+TennisFlow employs a tiered approach to tennis movement analysis:
+
+1. **Pose Estimation Engines**:
+   - **Primary**: OpenPose for high-accuracy detection
+   - **Alternative**: MediaPipe for efficient processing
+   - **Lightweight**: TensorFlow/MoveNet for resource-constrained environments
+
+2. **Motion Analysis Components**:
+   - **Joint Angle Calculation**: Tracking key angles (elbow, shoulder, hip, knee) during swings
+   - **Movement Analysis**: Tracking player position, court coverage, and movement patterns
+   - **Stroke Classification**: Rule-based identification of stroke types (forehand, backhand, serve, volley)
+   - **Biomechanical Assessment**: Analyzing body positioning throughout stroke phases
+
+3. **Technical Implementation**:
+   - **Rule-Based Patterns**: Predefined angle ranges and positional criteria for different strokes
+   - **Stroke Phase Detection**: Segmentation of swings into preparation, contact, and follow-through
+   - **Movement Metrics**: Calculation of distance, speed, direction changes, and court coverage
+   - **Modular Architecture**: Separate modules for data collection, feature extraction, analysis, and visualization
+
+## Current Implementation Status
+
+- Mobile app structure set up with React Navigation
+- Backend API defined with FastAPI
+- Docker setup for OpenPose, MediaPipe, and TensorFlow integration
+- Basic video recording and upload functionality
+- Initial analysis visualization components
+- Enhanced error handling and service availability management
+- Improved authentication flow with session management
+- Biomechanical analysis framework implemented with:
+  - Joint angle calculations
+  - Player movement tracking
+  - Rule-based stroke classification
+  - Foundational biomechanical models
+
+## Recent Technical Improvements
+
+- **Redis Independence**: Made Redis optional for development, allowing the API to function without a Redis instance
+- **Enhanced Authentication**: Improved login process with session verification and refresh capabilities
+- **Cross-Device Connectivity**: Updated network configuration to support testing between iPhone and development machine
+- **Robust Error Handling**: Added comprehensive error catching, logging, and user feedback
+- **Graceful Degradation**: Implemented fallbacks when services are unavailable
+- **Storage Path Security**: Fixed storage paths to comply with security policies and Row-Level Security
+- **Debugging Enhancements**: Added detailed logging throughout for easier troubleshooting
+
+## Next Steps
+
+- Complete integration between mobile app and backend
+- Implement detailed swing metrics and feedback
+- Add user profile and progress tracking
+- Enhance UI/UX with animations and transitions
+- Add coaching features and social sharing
+- Expand reference models with professional player data
+- Implement machine learning models to complement rule-based analysis
+- Add personalized technique recommendations based on biomechanical principles 
