@@ -11,7 +11,7 @@ import {
   Modal
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import { useAuth } from '../hooks/useAuth';
 import { Ionicons } from '@expo/vector-icons';
 import * as VideoService from '../services/videoService';
@@ -124,8 +124,14 @@ export default function VideoUploader({ onUploadComplete, onCancel }: VideoUploa
   };
 
   const uploadVideo = async () => {
-    if (!videoUri || !thumbnailUri || !user) {
-      Alert.alert('Error', 'Missing video, thumbnail, or user information');
+    if (!videoUri || !thumbnailUri) {
+      Alert.alert('Error', 'Missing video or thumbnail');
+      return;
+    }
+    
+    if (!user || !user.id) {
+      console.error('No authenticated user found');
+      Alert.alert('Authentication Required', 'Please log in before uploading videos');
       return;
     }
     
@@ -138,6 +144,9 @@ export default function VideoUploader({ onUploadComplete, onCancel }: VideoUploa
       setUploading(true);
       setUploadProgress(0);
       
+      // Log user information
+      console.log('Uploading video for user:', user.id, user.email);
+      
       // Simulate progress updates
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
@@ -149,39 +158,45 @@ export default function VideoUploader({ onUploadComplete, onCancel }: VideoUploa
         });
       }, 300);
       
-      // Upload video
-      const { videoId } = await VideoService.uploadVideo(
-        user.id,
-        videoUri,
-        thumbnailUri,
-        title,
-        description
-      );
-      
-      // Clear progress interval
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-      
-      // Request video analysis
-      await VideoService.requestVideoAnalysis(videoId);
-      
-      Alert.alert(
-        'Upload Complete', 
-        'Your video has been uploaded and is being processed for analysis. You will be notified when the analysis is complete.'
-      );
-      
-      // Reset form
-      setVideoUri(null);
-      setThumbnailUri(null);
-      setTitle('');
-      setDescription('');
-      
-      // Call the callback if provided
-      if (onUploadComplete) {
-        onUploadComplete(videoId);
+      // Upload video with better error handling
+      try {
+        const { videoId } = await VideoService.uploadVideo(
+          user.id,
+          videoUri,
+          thumbnailUri,
+          title,
+          description
+        );
+        
+        // Clear progress interval
+        clearInterval(progressInterval);
+        setUploadProgress(100);
+        
+        // Request video analysis
+        await VideoService.requestVideoAnalysis(videoId);
+        
+        Alert.alert(
+          'Upload Complete', 
+          'Your video has been uploaded and is being processed for analysis. You will be notified when the analysis is complete.'
+        );
+        
+        // Reset form
+        setVideoUri(null);
+        setThumbnailUri(null);
+        setTitle('');
+        setDescription('');
+        
+        // Call the callback if provided
+        if (onUploadComplete) {
+          onUploadComplete(videoId);
+        }
+      } catch (uploadError: any) {
+        clearInterval(progressInterval);
+        console.error('Error in VideoService.uploadVideo:', uploadError);
+        throw new Error(`Video upload failed: ${uploadError.message}`);
       }
     } catch (error: any) {
-      console.error('Error uploading video:', error);
+      console.error('Error in uploadVideo component method:', error);
       Alert.alert('Upload Failed', error.message || 'An unexpected error occurred');
     } finally {
       setUploading(false);
@@ -227,7 +242,7 @@ export default function VideoUploader({ onUploadComplete, onCancel }: VideoUploa
               source={{ uri: videoUri }}
               style={styles.videoPreview}
               useNativeControls
-              resizeMode="contain"
+              resizeMode={ResizeMode.CONTAIN}
             />
             
             <TouchableOpacity 

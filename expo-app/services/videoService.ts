@@ -154,6 +154,14 @@ export const uploadVideo = async (
   description?: string
 ): Promise<{ videoId: string, videoUrl: string, thumbnailUrl: string }> => {
   try {
+    console.log('Starting video upload process for user:', userId);
+    
+    // Check if user is authenticated
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      throw new Error('User not authenticated');
+    }
+    
     // First, ensure cache directories exist
     await setupCacheDirectories();
     
@@ -166,18 +174,36 @@ export const uploadVideo = async (
     const videoPath = `${userId}/${videoId}/video.mp4`;
     const thumbnailPath = `${userId}/${videoId}/thumbnail.jpg`;
     
-    // Upload to Supabase Storage
-    const videoUrl = await uploadToStorage(compressedVideoUri, videoPath);
-    const thumbnailUrl = await uploadToStorage(processedThumbnailUri, thumbnailPath);
+    console.log('Uploading to paths:', videoPath, thumbnailPath);
+
+    // Upload to Supabase Storage with error handling
+    let videoUrl;
+    try {
+      videoUrl = await uploadToStorage(compressedVideoUri, videoPath);
+      console.log('Video uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading video file:', error);
+      throw new Error(`Video upload failed: ${error.message}`);
+    }
     
-    // Create entry in the videos table
+    let thumbnailUrl;
+    try {
+      thumbnailUrl = await uploadToStorage(processedThumbnailUri, thumbnailPath);
+      console.log('Thumbnail uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading thumbnail:', error);
+      throw new Error(`Thumbnail upload failed: ${error.message}`);
+    }
+    
+    // Create entry in the videos table with explicit columns and values
+    console.log('Creating database entry with video URLs');
     const { data, error } = await supabase
       .from('videos')
       .insert({
         id: videoId,
         user_id: userId,
-        title,
-        description,
+        title: title,
+        description: description || '',
         video_url: videoUrl,
         thumbnail_url: thumbnailUrl,
         analysis_status: 'pending'
@@ -185,19 +211,23 @@ export const uploadVideo = async (
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Database insert error:', error);
+      throw new Error(`Database error: ${error.message}`);
+    }
     
     // Clean up temporary files
     await FileSystem.deleteAsync(compressedVideoUri, { idempotent: true });
     await FileSystem.deleteAsync(processedThumbnailUri, { idempotent: true });
     
+    console.log('Video upload completed successfully');
     return {
       videoId,
       videoUrl,
       thumbnailUrl
     };
-  } catch (error) {
-    console.error('Error uploading video:', error);
+  } catch (error: any) {
+    console.error('Error in uploadVideo:', error);
     throw error;
   }
 };

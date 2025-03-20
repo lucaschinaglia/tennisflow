@@ -36,25 +36,53 @@ const AuthScreen: React.FC = () => {
     setLoading(true);
     
     try {
-      // This is just a placeholder - in a real app, you would connect to Supabase or another auth provider
       if (isLogin) {
         // Login logic
         console.log('Logging in with:', email, password);
-        // For demo purposes, we'll just navigate to the Home screen
+        const { data, error } = await signIn(email, password);
+        
+        if (error) {
+          console.error('Login error:', error);
+          throw new Error(error.message);
+        }
+        
+        console.log('Login successful, session:', data.session ? 'exists' : 'null');
+        if (!data.session) {
+          throw new Error('Failed to create session');
+        }
+        
+        // Navigate to Home screen
         navigation.navigate('Home');
       } else {
         // Signup logic
         if (password !== confirmPassword) {
           Alert.alert('Error', 'Passwords do not match');
+          setLoading(false);
           return;
         }
+        
         console.log('Signing up with:', email, password);
-        // For demo purposes, we'll just navigate to the Home screen
-        navigation.navigate('Home');
+        const { data, error } = await signUp(email, password);
+        
+        if (error) {
+          console.error('Signup error:', error);
+          throw new Error(error.message);
+        }
+        
+        if (data.session) {
+          console.log('Signup successful with session');
+          navigation.navigate('Home');
+        } else {
+          // If email confirmation is required
+          Alert.alert(
+            'Verification Email Sent',
+            'Please check your email to verify your account before logging in.'
+          );
+        }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Authentication error:', error);
-      Alert.alert('Error', 'Failed to authenticate. Please try again.');
+      Alert.alert('Error', error.message || 'Failed to authenticate. Please try again.');
     } finally {
       setLoading(false);
     }

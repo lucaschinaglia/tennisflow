@@ -32,29 +32,86 @@ export const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
 
 // Auth functions
 export const signIn = async (email: string, password: string) => {
-  return await supabase.auth.signInWithPassword({ email, password });
+  console.log('Attempting to sign in with email:', email);
+  const result = await supabase.auth.signInWithPassword({ email, password });
+  
+  if (result.error) {
+    console.error('Sign in error:', result.error);
+  } else {
+    console.log('Sign in successful. Session exists:', !!result.data.session);
+    // Check if session is being set properly
+    const { data: sessionData } = await supabase.auth.getSession();
+    console.log('Session after login:', sessionData.session ? 'exists' : 'missing');
+  }
+  
+  return result;
 };
 
 export const signUp = async (email: string, password: string) => {
-  return await supabase.auth.signUp({ email, password });
+  console.log('Attempting to sign up with email:', email);
+  const result = await supabase.auth.signUp({ email, password });
+  
+  if (result.error) {
+    console.error('Sign up error:', result.error);
+  } else {
+    console.log('Sign up successful. Session exists:', !!result.data.session);
+  }
+  
+  return result;
 };
 
 export const signOut = async () => {
-  return await supabase.auth.signOut();
+  console.log('Signing out');
+  const result = await supabase.auth.signOut();
+  
+  if (result.error) {
+    console.error('Sign out error:', result.error);
+  } else {
+    console.log('Sign out successful');
+  }
+  
+  return result;
 };
 
 export const resetPassword = async (email: string) => {
-  return await supabase.auth.resetPasswordForEmail(email);
+  console.log('Sending password reset email to:', email);
+  const result = await supabase.auth.resetPasswordForEmail(email);
+  
+  if (result.error) {
+    console.error('Password reset error:', result.error);
+  } else {
+    console.log('Password reset email sent successfully');
+  }
+  
+  return result;
 };
 
 // Check if a user is already logged in
 export const getCurrentUser = async () => {
-  return await supabase.auth.getUser();
+  console.log('Checking for current user');
+  const result = await supabase.auth.getUser();
+  
+  if (result.error) {
+    console.error('Get user error:', result.error);
+  } else {
+    console.log('Current user:', result.data.user ? result.data.user.email : 'No user found');
+  }
+  
+  return result;
 };
 
 // Get session data
 export const getSession = async () => {
-  return await supabase.auth.getSession();
+  console.log('Getting current session');
+  const result = await supabase.auth.getSession();
+  
+  if (result.error) {
+    console.error('Get session error:', result.error);
+  } else {
+    console.log('Session exists:', !!result.data.session);
+  }
+  
+  return result;
 };
 
 // Data functions
