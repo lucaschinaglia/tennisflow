@@ -161,16 +161,27 @@ The project is divided into two main components:
   - Ensure API is running and accessible from your device
   - Verify your local IP address is correct in config
   - Check firewall settings to allow connections on port 8001
+  - Confirm Redis connection if using task queue functionality
+  - Use the `/health` endpoint to verify API and dependent services status
 
 - **Video Upload Problems**:
   - Verify Supabase credentials and RLS policies
   - Check storage bucket "tennis-videos" exists
   - Ensure proper Content-Type headers for uploads
+  - Verify network connectivity between mobile device and API server
 
 - **Processing Failures**:
   - Check Docker logs for OpenPose/MediaPipe errors
   - Verify video format is supported (MP4 recommended)
   - Ensure sufficient disk space for temporary video processing
+  - Inspect worker.log for detailed processing information and error messages
+  - Confirm SSL verification is properly configured for video downloading
+
+- **Analysis Retrieval Issues**:
+  - Check that video processing has completed successfully
+  - Verify the video ID being used in API calls is correct
+  - Ensure proper error handling in frontend fetch requests
+  - Check network connectivity during analysis data retrieval
 
 ## Deployment Strategy
 
@@ -233,6 +244,11 @@ TennisFlow employs a tiered approach to tennis movement analysis:
 - **Graceful Degradation**: Implemented fallbacks when services are unavailable
 - **Storage Path Security**: Fixed storage paths to comply with security policies and Row-Level Security
 - **Debugging Enhancements**: Added detailed logging throughout for easier troubleshooting
+- **API Reliability**: Fixed connectivity issues with Redis service and improved error handling for service unavailability
+- **SSL Verification**: Resolved issues with SSL certificate verification during video downloading process
+- **Video Analysis Pipeline**: Enhanced worker process to correctly handle video processing and properly store analysis results
+- **Analysis Data Structure**: Improved the structure and storage of detailed pose analysis data with proper JSON formatting
+- **Frontend-Backend Integration**: Refined the communication between the mobile app and backend for reliable analysis retrieval
 
 ## Next Steps
 
