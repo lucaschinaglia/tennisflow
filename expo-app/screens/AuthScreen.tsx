@@ -46,11 +46,10 @@ const AuthScreen: React.FC = () => {
           throw new Error(error.message);
         }
         
-        console.log('Login successful, session:', data.session ? 'exists' : 'null');
-        if (!data.session) {
+        console.log('Login successful, session:', data?.session ? 'exists' : 'null');
+        if (!data?.session) {
           throw new Error('Failed to create session');
         }
-        
         // Navigate to Home screen
         navigation.navigate('Home');
       } else {

@@ -12,6 +12,7 @@ import math
 from typing import Dict, Any, List, Tuple, Optional
 import numpy as np
 import cv2
+import ssl
 
 # Try importing MediaPipe as a fallback
 try:
@@ -46,7 +47,17 @@ def get_timestamp() -> str:
 
 def download_video(url: str, target_path: str) -> str:
     """Download video from URL to target path"""
-    urllib.request.urlretrieve(url, target_path)
+    # Create a context that doesn't verify SSL certificates (for development only)
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    
+    # Use the custom SSL context with urlretrieve
+    with urllib.request.urlopen(url, context=ctx) as response:
+        with open(target_path, 'wb') as out_file:
+            out_file.write(response.read())
+            
+    logger.info(f"Downloaded video from {url} to {target_path}")
     return target_path
 
 def extract_frames(video_path: str, output_dir: str, fps: int = 30) -> List[str]:

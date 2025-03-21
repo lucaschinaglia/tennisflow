@@ -17,7 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { uploadAndAnalyzeVideo } from '../services/analysisService';
+import { uploadAndAnalyzeVideo, checkApiHealth } from '../services/analysisService';
 import { CameraType, RootStackParamList } from '../types';
 
 type VideoUploaderScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'VideoUploader'>;
@@ -31,6 +31,7 @@ const VideoUploader: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const cameraRef = useRef<CameraView>(null);
+  const [isHealthy, setIsHealthy] = useState(true);
 
   useEffect(() => {
     (async () => {
@@ -79,9 +80,36 @@ const VideoUploader: React.FC = () => {
     }
   };
 
+  const checkHealth = async () => {
+    try {
+      setIsHealthy(false);
+      const healthStatus = await checkApiHealth();
+      console.log('API health status:', healthStatus);
+      
+      // API is considered healthy if the status is "healthy" or "ok"
+      setIsHealthy(healthStatus.status === 'healthy' || healthStatus.status === 'ok');
+    } catch (error) {
+      console.error('Error checking API health:', error);
+      setIsHealthy(false);
+    }
+  };
+
+  useEffect(() => {
+    checkHealth();
+  }, []);
+
   const uploadVideo = async () => {
     if (!video) return;
     
+    if (!isHealthy) {
+      Alert.alert(
+        'Service Unavailable', 
+        'The analysis service is not available. Please check your connection and try again later.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     try {
       setUploading(true);
       setUploadProgress(0);
@@ -89,6 +117,16 @@ const VideoUploader: React.FC = () => {
       // Extract filename from URI
       const uriParts = video.split('/');
       const fileName = uriParts[uriParts.length - 1];
+      
+      // Show a message for large videos
+      if (Platform.OS === 'ios') {
+        // Alert user that analysis might take time
+        Alert.alert(
+          'Analysis in Progress',
+          'Your video is being uploaded and analyzed. This may take a few minutes. You will be notified when complete.',
+          [{ text: 'OK' }]
+        );
+      }
       
       // Upload the video
       const result = await uploadAndAnalyzeVideo(video, fileName);
@@ -99,10 +137,16 @@ const VideoUploader: React.FC = () => {
         taskId: result.taskId,
         videoUri: video
       });
-    } catch (error) {
+    } catch (error: any) {
       setUploading(false);
       console.error('Error uploading video:', error);
-      Alert.alert('Upload Failed', 'There was an error uploading your video. Please try again.');
+      
+      // Show a more specific error message based on the error type
+      Alert.alert(
+        'Upload Failed', 
+        error.message || 'There was an error uploading your video. Please try again.',
+        [{ text: 'OK' }]
+      );
     }
   };
 

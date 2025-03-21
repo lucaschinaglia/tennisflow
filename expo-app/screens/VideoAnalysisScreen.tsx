@@ -10,7 +10,7 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
-import { Video } from 'expo-av';
+import { Video, ResizeMode } from 'expo-av';
 import Slider from '@react-native-community/slider';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabaseService';
@@ -50,6 +50,7 @@ const VideoAnalysisScreen: React.FC<VideoAnalysisScreenProps> = ({ route, naviga
   const [showPose, setShowPose] = useState(true);
   const [showMetrics, setShowMetrics] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pollRetryCount, setPollRetryCount] = useState(0);
   
   const videoRef = useRef<Video>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,6 +58,9 @@ const VideoAnalysisScreen: React.FC<VideoAnalysisScreenProps> = ({ route, naviga
   // Component dimensions
   const windowWidth = Dimensions.get('window').width;
   const videoHeight = windowWidth * 0.5625; // 16:9 aspect ratio
+  
+  // Maximum number of polling attempts before showing an error
+  const MAX_POLL_RETRIES = 10;
   
   // Get video URL from Supabase
   const getVideoUrl = async () => {
@@ -79,22 +83,51 @@ const VideoAnalysisScreen: React.FC<VideoAnalysisScreenProps> = ({ route, naviga
   const startPolling = () => {
     if (pollingRef.current) clearInterval(pollingRef.current);
     
+    // Reset poll retry count when starting a new polling session
+    setPollRetryCount(0);
+    
     pollingRef.current = setInterval(async () => {
       try {
         const status = await checkAnalysisStatus(taskId);
+        console.log(`Polling status: ${status.status}, error: ${status.error || 'none'}`);
         setProcessingStatus(status);
         
+        // If we get a proper completed status, stop polling and fetch data
         if (status.status === 'completed') {
           stopPolling();
           fetchAnalysisData();
-        } else if (status.status === 'failed') {
+        } 
+        // If we get a failed status, stop polling and show error
+        else if (status.status === 'failed') {
           stopPolling();
           setError(`Analysis failed: ${status.error || 'Unknown error'}`);
         }
+        // If we have an error message related to Redis or server issues, count as a retry
+        else if (status.error?.includes('redis') || status.error?.includes('server')) {
+          const newRetryCount = pollRetryCount + 1;
+          setPollRetryCount(newRetryCount);
+          
+          // If we've exceeded max retries, show server issue error but don't stop polling
+          if (newRetryCount >= MAX_POLL_RETRIES) {
+            setError('The analysis server is experiencing issues. Your video was uploaded but analysis is delayed. You can check back later.');
+          }
+        } else {
+          // Reset retry count if we get a valid status without Redis errors
+          setPollRetryCount(0);
+        }
       } catch (err: any) {
-        console.error('Error checking status:', err);
-        setError(`Error checking analysis status: ${err.message}`);
-        stopPolling();
+        // Track retry count for error cases too
+        const newRetryCount = pollRetryCount + 1;
+        setPollRetryCount(newRetryCount);
+        
+        console.error('Error during status poll:', err);
+        
+        // Stop polling after too many consecutive errors
+        if (newRetryCount >= MAX_POLL_RETRIES) {
+          stopPolling();
+          setError('Unable to connect to the analysis service after multiple attempts. Your video was uploaded but we cannot verify its status right now.');
+          setLoading(false);
+        }
       }
     }, POLLING_INTERVAL);
   };
@@ -119,32 +152,35 @@ const VideoAnalysisScreen: React.FC<VideoAnalysisScreenProps> = ({ route, naviga
     }
   };
   
+  // Check initial status
+  const checkInitialStatus = async () => {
+    try {
+      console.log("Checking initial analysis status...");
+      const status = await checkAnalysisStatus(taskId);
+      console.log(`Initial status: ${status.status}, error: ${status.error || 'none'}`);
+      setProcessingStatus(status);
+      
+      if (status.status === 'completed') {
+        fetchAnalysisData();
+      } else if (status.status === 'failed') {
+        setError(`Analysis failed: ${status.error || 'Unknown error'}`);
+        setLoading(false);
+      } else {
+        // Still processing or queued, start polling
+        console.log("Starting polling for status updates");
+        startPolling();
+      }
+    } catch (err: any) {
+      console.error('Error checking initial status:', err);
+      // Don't show error immediately, start polling anyway
+      console.log("Starting polling despite initial error");
+      startPolling();
+    }
+  };
+  
   // Initialize
   useEffect(() => {
     getVideoUrl();
-    
-    // Check initial status
-    const checkInitialStatus = async () => {
-      try {
-        const status = await checkAnalysisStatus(taskId);
-        setProcessingStatus(status);
-        
-        if (status.status === 'completed') {
-          fetchAnalysisData();
-        } else if (status.status === 'failed') {
-          setError(`Analysis failed: ${status.error || 'Unknown error'}`);
-          setLoading(false);
-        } else {
-          // Still processing, start polling
-          startPolling();
-        }
-      } catch (err: any) {
-        console.error('Error checking initial status:', err);
-        setError(`Error checking analysis status: ${err.message}`);
-        setLoading(false);
-      }
-    };
-    
     checkInitialStatus();
     
     return () => {
@@ -201,12 +237,34 @@ const VideoAnalysisScreen: React.FC<VideoAnalysisScreenProps> = ({ route, naviga
             <View style={styles.errorContainer}>
               <Ionicons name="alert-circle" size={48} color="#F44336" />
               <Text style={styles.errorText}>{error}</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() => navigation.goBack()}
-              >
-                <Text style={styles.retryButtonText}>Back to Upload</Text>
-              </TouchableOpacity>
+              
+              {error.includes('server is experiencing issues') && (
+                <Text style={styles.errorDetail}>
+                  Your video was uploaded successfully but our analysis server is having trouble connecting to its database. 
+                  Your video will be processed when the service recovers.
+                </Text>
+              )}
+              
+              <View style={styles.errorButtonsContainer}>
+                <TouchableOpacity
+                  style={styles.retryButton}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Text style={styles.retryButtonText}>Back to Upload</Text>
+                </TouchableOpacity>
+                
+                {error.includes('server is experiencing issues') && (
+                  <TouchableOpacity
+                    style={[styles.retryButton, {backgroundColor: '#4CAF50', marginLeft: 10}]}
+                    onPress={() => {
+                      setError(null);
+                      checkInitialStatus();
+                    }}
+                  >
+                    <Text style={styles.retryButtonText}>Retry Check</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           ) : (
             <>
@@ -248,7 +306,7 @@ const VideoAnalysisScreen: React.FC<VideoAnalysisScreenProps> = ({ route, naviga
               source={{ uri: videoUrl }}
               style={[styles.video, { height: videoHeight }]}
               useNativeControls={false}
-              resizeMode="contain"
+              resizeMode={ResizeMode.CONTAIN}
               isLooping
               shouldPlay={isPlaying}
               onPlaybackStatusUpdate={(status) => {
@@ -645,8 +703,19 @@ const styles = StyleSheet.create({
     color: '#F44336',
     textAlign: 'center',
   },
-  retryButton: {
+  errorDetail: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  errorButtonsContainer: {
     marginTop: 20,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  retryButton: {
     backgroundColor: '#2196F3',
     paddingVertical: 12,
     paddingHorizontal: 20,

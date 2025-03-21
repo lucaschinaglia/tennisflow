@@ -13,6 +13,7 @@ import numpy as np
 import cv2
 import redis
 import supabase
+from pathlib import Path
 from processor import (
     download_video, 
     extract_frames, 
@@ -20,6 +21,22 @@ from processor import (
     generate_analysis_results,
     get_timestamp
 )
+
+# Load environment variables from .env file
+def load_env_file(env_file):
+    env_path = Path(env_file)
+    if env_path.exists():
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#') or '=' not in line:
+                    continue
+                key, value = line.split('=', 1)
+                os.environ[key] = value.strip('"').strip("'")
+                
+# Load .env file from parent directory
+env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_env_file(env_file)
 
 # Configure logging
 logging.basicConfig(
@@ -37,8 +54,13 @@ redis_client = redis.Redis(
 
 # Initialize Supabase client
 supabase_url = os.getenv("SUPABASE_URL")
-supabase_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+supabase_key = os.getenv("SUPABASE_KEY")
 supabase_client = supabase.create_client(supabase_url, supabase_key)
+
+# Log environment variables for debugging
+logger.info(f"REDIS_HOST: {os.getenv('REDIS_HOST')}")
+logger.info(f"SUPABASE_URL: {supabase_url}")
+logger.info(f"SUPABASE_KEY set: {'Yes' if supabase_key else 'No'}")
 
 # OpenPose executable path
 OPENPOSE_PATH = "/opt/openpose/build/examples/openpose/openpose.bin"
@@ -84,8 +106,46 @@ class Worker:
             
             # Download video
             video_path = os.path.join(work_dir, "video.mp4")
-            download_video(video_url, video_path)
-            logger.info(f"Downloaded video to {video_path}")
+            
+            try:
+                # Extract path from Supabase URL
+                # Example URL: https://mmjpyrqiemwpoidbmcdg.supabase.co/storage/v1/object/public/tennis-videos/user-id/video-id/video.mp4?
+                # We need to extract the bucket name and path
+                
+                # For direct download from Supabase using the SDK
+                from urllib.parse import urlparse, unquote
+                parsed_url = urlparse(video_url)
+                
+                # Extract path after 'public/' and remove trailing parameters
+                path_parts = unquote(parsed_url.path).split('/public/')
+                if len(path_parts) > 1:
+                    bucket_path = path_parts[1].split('?')[0]
+                    # Split to get bucket and path
+                    parts = bucket_path.split('/', 1)
+                    if len(parts) == 2:
+                        bucket = parts[0]
+                        path = parts[1]
+                        
+                        logger.info(f"Extracted bucket: {bucket}, path: {path}")
+                        
+                        # Download using Supabase SDK
+                        with open(video_path, 'wb') as f:
+                            response = supabase_client.storage.from_(bucket).download(path)
+                            f.write(response)
+                            
+                        logger.info(f"Downloaded video using Supabase SDK to {video_path}")
+                    else:
+                        raise ValueError(f"Invalid path format in URL: {video_url}")
+                else:
+                    # Fallback to direct download
+                    download_video(video_url, video_path)
+                    logger.info(f"Downloaded video using fallback method to {video_path}")
+                
+            except Exception as download_error:
+                logger.error(f"Error downloading video: {download_error}")
+                # Fallback to direct download
+                download_video(video_url, video_path)
+                logger.info(f"Downloaded video using fallback method to {video_path}")
             
             # Update progress
             task_data["progress"] = 0.2

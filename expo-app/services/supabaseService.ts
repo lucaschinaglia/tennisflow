@@ -2,22 +2,29 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
+import { testSupabaseAuth } from '../lib/auth-debugger';
 
 // Get environment variables from Expo config
 const getSupabaseUrl = () => {
+  console.log('[supabaseService.ts] EXPO_PUBLIC_SUPABASE_URL exists?', !!process.env.EXPO_PUBLIC_SUPABASE_URL);
   if (process.env.EXPO_PUBLIC_SUPABASE_URL) {
+    console.log('[supabaseService.ts] Using URL from env var:', process.env.EXPO_PUBLIC_SUPABASE_URL);
     return process.env.EXPO_PUBLIC_SUPABASE_URL;
   }
   // Fallback for development
+  console.log('[supabaseService.ts] Using hardcoded URL');
   return 'https://mmjpyrqiemwpoidbmcdg.supabase.co';
 };
 
 const getSupabaseAnonKey = () => {
+  console.log('[supabaseService.ts] EXPO_PUBLIC_SUPABASE_ANON_KEY exists?', !!process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
   if (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
+    console.log('[supabaseService.ts] Using API key from env var');
     return process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
   }
   // Use anon key, not service role key for client-side
-  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tanB5cnFpZW13cG9pZGJtY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzMzU0NTYsImV4cCI6MjA1NzkxMTQ1Nn0.KzAP_VGleqdf0tH3Mxq6kQlz-s2AoYFGLOA-M4dpAow';
+  console.log('[supabaseService.ts] Using hardcoded API key');
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1tanB5cnFpZW13cG9pZGJtY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI0MjE3MDAsImV4cCI6MjA1Nzk5NzcwMH0.2eKghe0Qf1RwqDh25CDYGSyDPj9x_YkzotiNxC9gvXs';
 };
 
 // Create Supabase client
@@ -30,13 +37,28 @@ export const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
   },
 });
 
+// DEBUG WARNING: You have two Supabase client initializations - fix this!
+console.warn('⚠️ WARNING: Multiple Supabase clients detected. Use lib/supabase.ts for all imports.');
+console.warn('⚠️ This can cause authentication issues. Update imports to use a single client instance.');
+
 // Auth functions
 export const signIn = async (email: string, password: string) => {
   console.log('Attempting to sign in with email:', email);
+  
+  // First try with our potentially problematic client
   const result = await supabase.auth.signInWithPassword({ email, password });
   
   if (result.error) {
     console.error('Sign in error:', result.error);
+    console.log('Trying with direct test client as fallback...');
+    
+    // If it fails, try with our guaranteed correct test client
+    const directResult = await testSupabaseAuth(email, password);
+    
+    if (directResult.success) {
+      console.log('Direct test succeeded, but regular client failed - this indicates a configuration issue!');
+      return { data: directResult.data, error: null };
+    }
   } else {
     console.log('Sign in successful. Session exists:', !!result.data.session);
     // Check if session is being set properly
