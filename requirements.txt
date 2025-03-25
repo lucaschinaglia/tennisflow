@@ -1,0 +1,25 @@
+# Core libraries
+numpy>=1.20.0
+torch>=1.9.0
+torchvision>=0.10.0
+opencv-python>=4.5.3
+Pillow>=8.3.1
+
+# API and web libraries
+fastapi>=0.68.0
+uvicorn>=0.15.0
+python-multipart>=0.0.5
+pydantic>=1.8.2
+
+# Data augmentation and visualization
+albumentations>=1.0.3
+matplotlib>=3.4.3
+
+# Utility libraries
+requests>=2.26.0
+tqdm>=4.62.2
+python-dotenv>=0.19.0
+PyYAML>=6.0
+
+# Model export and inference
+onnx>=1.10.1
