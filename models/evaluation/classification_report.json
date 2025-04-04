@@ -1,0 +1,39 @@
+{
+  "volley": {
+    "precision": 0.9285714285714286,
+    "recall": 0.8125,
+    "f1-score": 0.8666666666666667,
+    "support": 16.0
+  },
+  "neutral": {
+    "precision": 0.875,
+    "recall": 0.875,
+    "f1-score": 0.875,
+    "support": 16.0
+  },
+  "forehand": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 16.0
+  },
+  "backhand": {
+    "precision": 0.8888888888888888,
+    "recall": 1.0,
+    "f1-score": 0.9411764705882353,
+    "support": 16.0
+  },
+  "accuracy": 0.921875,
+  "macro avg": {
+    "precision": 0.9231150793650794,
+    "recall": 0.921875,
+    "f1-score": 0.9207107843137254,
+    "support": 64.0
+  },
+  "weighted avg": {
+    "precision": 0.9231150793650794,
+    "recall": 0.921875,
+    "f1-score": 0.9207107843137254,
+    "support": 64.0
+  }
+}

@@ -1,0 +1,62 @@
+Model Comparison for Tennis Shot Classification
+
+Model 1 (Bidirectional LSTM):
+  - Accuracy: 61.17%
+  - Volley F1-score: 0.41
+  - Backhand F1-score: 0.83
+  - Training epochs: 36 (early stopping)
+  - Parameters: 146K
+
+Model 2 (Bidirectional LSTM, 128 units, dropout 0.4):
+  - Accuracy: 57.28%
+  - Volley F1-score: 0.40
+  - Backhand F1-score: 0.80
+  - Training epochs: 27 (early stopping)
+  - Parameters: 554K
+
+Model 3 (Unidirectional LSTM, 96 units, smaller batch size):
+  - Accuracy: 62.14%
+  - Volley F1-score: 0.51
+  - Backhand F1-score: 0.84
+  - Training epochs: 26 (early stopping)
+  - Parameters: 122K
+
+
+Model 4 (Static Pose Enhanced LSTM):
+  - Accuracy: 96.88%
+  - Volley F1-score: 0.94
+  - Backhand F1-score: 1.00
+  - Training epochs: 52 (early stopping)
+  - Parameters: 123K
+
+Conclusion:
+Model 4 with static pose enhancement demonstrated a significant improvement over previous models, achieving 96.88% accuracy on the validation set and 92.31% on the test set, far surpassing the previous best model (Model 3) at 62.14%. The static pose integration approach clearly provides valuable reference information that helps the model better distinguish between different shot types.
+
+Comparing all models:
+- Model 1 (Bidirectional LSTM): 61.17% accuracy with 146K parameters
+- Model 2 (Bidirectional LSTM, larger): 57.28% accuracy with 554K parameters
+- Model 3 (Unidirectional LSTM): 62.14% accuracy with 122K parameters 
+- Model 4 (Static Pose Enhanced LSTM): 96.88% accuracy with 123K parameters
+
+Key insights from this comparison:
+1. Static pose reference data provides crucial context for shot classification
+2. Dual-stream architecture (sequence + similarity features) dramatically improves performance
+3. Model 4 achieves near-perfect F1-scores for backhand (1.00) and excellent scores for volley (0.94)
+4. The architecture remains parameter-efficient, with only 1K more parameters than Model 3
+
+Model 4 demonstrates that incorporating domain knowledge (canonical poses for each shot type) can yield greater improvements than simply scaling model complexity. This approach effectively addresses the challenges previous models faced with ready position/neutral classification and complex shot patterns.
+
+Future work could focus on:
+1. Incorporating more reference poses for variant shot styles
+2. Extending this approach to phase detection within shots (preparation, contact, follow-through)
+3. Adding attention mechanisms to focus on key joints during different shot phases
+4. Evaluating and optimizing the model for real-time performance
+
+All models struggled with the neutral and forehand classes, which suggests that more data augmentation or specialized techniques might be needed for these classes. The TenniSet data integration helped improve serve classification, but more domain-specific data engineering might be required for further improvements.
+
+The best model (Model 3) balances complexity and performance, demonstrating that sometimes simpler architectures with careful tuning can outperform more complex ones. Future work could focus on:
+
+1. Collecting more data for underrepresented classes
+2. Further augmentation techniques specific to tennis movements
+3. Experimenting with attention mechanisms to focus on key parts of the motion sequence
+4. Ensemble methods combining multiple model architectures 

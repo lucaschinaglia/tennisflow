@@ -1,0 +1,80 @@
+{
+  "accuracy": 0.6213592233009708,
+  "confusion_matrix": [
+    [
+      14,
+      3,
+      0,
+      6
+    ],
+    [
+      11,
+      0,
+      0,
+      6
+    ],
+    [
+      4,
+      2,
+      0,
+      0
+    ],
+    [
+      3,
+      2,
+      2,
+      50
+    ]
+  ],
+  "classification_report": {
+    "volley": {
+      "precision": 0.4375,
+      "recall": 0.6086956521739131,
+      "f1-score": 0.509090909090909,
+      "support": 23.0
+    },
+    "neutral": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 17.0
+    },
+    "forehand": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 6.0
+    },
+    "backhand": {
+      "precision": 0.8064516129032258,
+      "recall": 0.8771929824561403,
+      "f1-score": 0.8403361344537815,
+      "support": 57.0
+    },
+    "accuracy": 0.6213592233009708,
+    "macro avg": {
+      "precision": 0.31098790322580644,
+      "recall": 0.3714721586575134,
+      "f1-score": 0.3373567608861726,
+      "support": 103.0
+    },
+    "weighted avg": {
+      "precision": 0.5439829314124647,
+      "recall": 0.6213592233009708,
+      "f1-score": 0.5787208793490918,
+      "support": 103.0
+    }
+  },
+  "present_labels": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "present_class_names": [
+    "volley",
+    "neutral",
+    "forehand",
+    "backhand"
+  ]
+}

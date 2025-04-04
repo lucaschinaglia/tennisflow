@@ -1,0 +1,56 @@
+{
+  "output_base_dir": "output",
+  "sequence_radius": 15,
+  
+  "pose_estimation": {
+    "model_type": "lightning",
+    "confidence_threshold": 0.3
+  },
+  
+  "smoothing": {
+    "filter_type": "savgol",
+    "window_length": 15,
+    "polyorder": 2,
+    "deriv": 0,
+    "delta": 1.0,
+    "axis": 0,
+    "mode": "interp",
+    "cval": 0.0
+  },
+  
+  "classification": {
+    "model_path": "models/rnn_classifier.h5",
+    "sequence_length": 30,
+    "stride": 15,
+    "threshold": 0.7,
+    "neutral_class_idx": 4,
+    "min_frame_separation": 15,
+    "lstm_units": 64,
+    "dropout_rate": 0.3,
+    "num_classes": 5,
+    "learning_rate": 0.001,
+    "bidirectional": true,
+    "epochs": 100,
+    "batch_size": 32
+  },
+  
+  "kinematics": {
+    "handedness": "right"
+  },
+  
+  "visualization": {
+    "draw_skeleton": true,
+    "draw_keypoint_confidence": true,
+    "line_thickness": 2,
+    "circle_radius": 5,
+    "text_scale": 0.5,
+    "overlay_metrics": true,
+    "show_shot_type": true
+  },
+  
+  "reporting": {
+    "include_visualizations": true,
+    "generate_pdf": true,
+    "include_recommendations": true
+  }
+} 

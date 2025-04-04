@@ -1,0 +1,3 @@
+[submodule "tennis_shot_recognition"]
+	path = tennis_shot_recognition
+	url = https://github.com/lucaschinaglia/tennis_shot_recognition.git 

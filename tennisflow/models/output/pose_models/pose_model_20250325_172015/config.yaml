@@ -1,0 +1,14 @@
+backbone: resnet50
+batch_size: 32
+classes:
+- forehand
+- backhand
+- serve
+- ready_position
+data_dir: tennisflow/training-set/poses
+epochs: 10
+img_size: 224
+learning_rate: 0.001
+output_dir: tennisflow/models/output/pose_models
+pretrained: true
+seed: 42

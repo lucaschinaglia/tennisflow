@@ -397,3 +397,6 @@ class RNNShotClassifier:
                 X_train_processed, y_train,
                 batch_size=self.config['batch_size'],
                 epochs=self.config['epochs'],
+            )
+        
+        return history

@@ -1,0 +1,33 @@
+{
+  "config": {
+    "rnn_units": 64,
+    "dense_units": 32,
+    "dropout_rate": 0.3,
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "epochs": 50,
+    "patience": 10,
+    "shot_types": [
+      "forehand",
+      "backhand",
+      "serve",
+      "volley",
+      "neutral"
+    ],
+    "sequence_length": 30,
+    "features_per_frame": 13
+  },
+  "shot_types": [
+    "forehand",
+    "backhand",
+    "serve",
+    "volley",
+    "neutral"
+  ],
+  "input_shape": [
+    154,
+    30,
+    13,
+    2
+  ]
+}

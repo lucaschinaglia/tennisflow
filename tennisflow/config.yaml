@@ -1,0 +1,48 @@
+# TennisFlow Configuration
+
+# Pose Estimation Settings
+pose_estimation:
+  model_type: "movenet_thunder"  # Options: "movenet_thunder", "movenet_lightning"
+  min_detection_confidence: 0.3
+  min_tracking_confidence: 0.3
+
+# Temporal Smoothing Settings
+smoothing:
+  method: "savgol"  # Options: "savgol", "kalman"
+  savgol:
+    window_size: 15  # Must be odd number and >= polynomial_order + 1
+    polynomial_order: 3
+  kalman:
+    process_noise: 0.01
+    measurement_noise: 0.1
+
+# RNN Classifier Settings
+rnn_classifier:
+  model_type: "gru"  # Options: "gru", "lstm"
+  sequence_length: 30
+  hidden_size: 128
+  num_layers: 2
+  dropout: 0.2
+  classes: ["forehand", "backhand", "serve", "neutral"]
+  confidence_threshold: 0.6
+
+# Kinematic Analysis Settings
+kinematics:
+  min_swing_duration: 0.5  # Seconds
+  speed_threshold: 5.0  # For swing detection
+  segmentation:
+    wrist_speed_threshold: 3.0  # Pixels per frame
+    window_size: 7  # Frames for smoothing kinematic signals
+
+# Pipeline Settings
+pipeline:
+  sample_rate: 2  # Process every Nth frame
+  parallel_processing: false
+  debug_mode: false
+
+# Paths
+paths:
+  models_dir: "models"
+  data_dir: "data"
+  raw_data: "data/raw"
+  processed_data: "data/processed" 

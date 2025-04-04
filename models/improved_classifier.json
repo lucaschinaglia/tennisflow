@@ -1,0 +1,34 @@
+{
+  "config": {
+    "rnn_units": 64,
+    "dense_units": 32,
+    "dropout_rate": 0.3,
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "epochs": 100,
+    "patience": 10,
+    "shot_types": [
+      "volley",
+      "neutral",
+      "forehand",
+      "backhand"
+    ],
+    "sequence_length": 30,
+    "features_per_frame": 26,
+    "use_class_weights": true,
+    "augment_data": true,
+    "noise_level": 0.02,
+    "bidirectional": true
+  },
+  "shot_types": [
+    "volley",
+    "neutral",
+    "forehand",
+    "backhand"
+  ],
+  "input_shape": [
+    30,
+    26
+  ],
+  "num_classes": 4
+}

@@ -1,0 +1,23 @@
+{
+  "model_name": "Model 4 - Static Pose Enhanced LSTM",
+  "accuracy": 0.9230769230769231,
+  "f1_scores": {
+    "forehand": 1.0,
+    "backhand": 0.5,
+    "serve": 1.0,
+    "neutral": 0.9230769230769231
+  },
+  "parameters": 123268,
+  "epochs_trained": 30,
+  "config": {
+    "lstm_units": 96,
+    "dropout_rate": 0.3,
+    "learning_rate": 0.001,
+    "batch_size": 32,
+    "epochs": 100,
+    "patience": 10,
+    "use_class_weights": true,
+    "bidirectional": false,
+    "augment_data": false
+  }
+}

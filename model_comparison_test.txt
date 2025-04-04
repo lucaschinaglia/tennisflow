@@ -1,0 +1,8 @@
+
+
+Model 4 (Static Pose Enhanced LSTM):
+  - Accuracy: 92.31%
+  - Volley F1-score: 0.00
+  - Backhand F1-score: 0.50
+  - Training epochs: 30 (early stopping)
+  - Parameters: 123K

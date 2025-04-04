@@ -1,0 +1,11 @@
+best_val_acc: 17.25
+best_val_loss: 3.4079832205405602
+class_accuracy:
+  '0': 44.0
+  '1': 8.0
+  '2': 4.0
+  '3': 0.0
+epochs_trained: 10
+test_acc: 14.0
+test_loss: 3.768343584878104
+training_time: 6772.663372039795

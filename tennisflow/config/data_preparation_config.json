@@ -1,0 +1,43 @@
+{
+  "pose_estimation": {
+    "model_type": "lightning",
+    "confidence_threshold": 0.3
+  },
+  
+  "smoothing": {
+    "filter_type": "savgol",
+    "window_length": 15,
+    "polyorder": 2,
+    "deriv": 0,
+    "delta": 1.0,
+    "axis": 0,
+    "mode": "interp",
+    "cval": 0.0
+  },
+  
+  "sequence_extraction": {
+    "sequence_length": 30,
+    "classes": ["forehand", "backhand", "serve", "volley", "neutral"],
+    "class_mapping": {
+      "forehand": 0,
+      "backhand": 1,
+      "serve": 2,
+      "volley": 3,
+      "neutral": 4
+    },
+    "frames_before_shot": 15,
+    "frames_after_shot": 15,
+    "training_ratio": 0.8,
+    "validation_ratio": 0.2,
+    "neutral_sample_ratio": 0.5,
+    "min_neutral_spacing": 60
+  },
+  
+  "data_augmentation": {
+    "enable": true,
+    "horizontal_flip": true,
+    "rotation_range": 5,
+    "scale_range": [0.9, 1.1],
+    "time_stretch_range": [0.9, 1.1]
+  }
+} 

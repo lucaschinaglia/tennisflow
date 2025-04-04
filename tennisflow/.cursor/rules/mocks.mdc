@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Always implement high quality production ready code that performs the requested task, using the requested tools, libraries, external systems, infrastructure etc. Do NOT implement mocks, simulations, bypass or other fake or cheat in an attempt to complete the request.

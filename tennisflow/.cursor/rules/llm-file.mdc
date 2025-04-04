@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+Always check [tennis-flowLLM.txt](mdc:tennis-flowLLM.txt) to get context about business and tech decisions. Always update it when something changes (e.g. user flow, tech stack...)

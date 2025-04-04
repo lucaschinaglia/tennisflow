@@ -51,13 +51,14 @@ venv.bak/
 *.MOV
 *.MP4
 *.AVI
+.log
 
 # Specific to this project
-models/
-prepared_data/
 comparison_results/
 evaluation_results/
+analysis_results/
 Tennis/
+prepared_data/
 
 # MacOS specific
 .DS_Store 
