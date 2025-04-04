@@ -1,0 +1,26 @@
+{
+    "config": {
+      "rnn_units": 96,
+      "dense_units": 32,
+      "dropout_rate": 0.3,
+      "learning_rate": 0.001,
+      "batch_size": 16,
+      "epochs": 100,
+      "patience": 10,
+      "shot_types": ["forehand", "backhand", "serve", "neutral"],
+      "sequence_length": 30,
+      "features_per_frame": 26,
+      "use_class_weights": true,
+      "augment_data": false,
+      "noise_level": 0.02,
+      "static_poses": true,
+      "similarity_features": 4,
+      "keypoint_indices": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+    },
+    "input_shape": [
+      [30, 26],
+      [30, 4]
+    ],
+    "num_classes": 4,
+    "shot_types": ["forehand", "backhand", "serve", "neutral"]
+  }
